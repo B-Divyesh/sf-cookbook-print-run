@@ -1,0 +1,12 @@
+{
+  "slug": "cookbook-print-run",
+  "title": "Dinner Binder",
+  "territory": "utilities",
+  "user": "Households with digital recipe collections who need a clean, reliable printable cooking packet for a week, trip, or screen-free kitchen.",
+  "smallest_useful_product": "A static offline web app that accepts Markdown/JSON recipe files, selects recipes and servings, creates a paginated print packet with ingredient checkboxes, consolidated prep timeline, and optional allergen notes.",
+  "success_measure": "80% of users can turn three supplied recipes into a correctly paginated, readable print packet in under three minutes.",
+  "artifact_class": "static-web",
+  "monetization": "one-time",
+  "constraints": "Input only user-owned/exported recipes; preserve attribution fields; support printer-safe CSS and accessible typography; no dietary or allergy safety guarantees.",
+  "non_goals": ["web recipe import", "nutrition calculation", "shopping delivery", "hosted accounts"]
+}
