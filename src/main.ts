@@ -182,6 +182,7 @@ function startApp(): void {
 
   async function importFiles(files: FileList | null): Promise<void> {
     if (!files?.length) return;
+    announce(`Reading ${files.length} file${files.length === 1 ? '' : 's'}…`);
     const additions: Recipe[] = [];
     const errors: string[] = [];
     for (const file of Array.from(files)) {
@@ -228,7 +229,7 @@ function startApp(): void {
     if (!state.recipes.length) {
       const empty = document.createElement('div');
       empty.className = 'empty-state';
-      empty.innerHTML = `<picture><source srcset="/assets/dinner-packet-hero.avif" type="image/avif"><img src="/assets/dinner-packet-hero.webp" width="720" height="480" alt="Geometric paper recipe sheets arranged with ingredient markers and a kitchen timer"></picture><div><p class="step-label">Your workbench is clear</p><h3>Add a recipe to begin</h3><p>Use your own Markdown or JSON export, or load the three samples to see a complete packet in seconds.</p></div>`;
+      empty.innerHTML = `<picture><source srcset="/assets/dinner-packet-hero-480.avif 480w, /assets/dinner-packet-hero.avif 960w" sizes="(max-width: 560px) 358px, (max-width: 820px) 75vw, 50vw" type="image/avif"><img src="/assets/dinner-packet-hero.webp" srcset="/assets/dinner-packet-hero-480.webp 480w, /assets/dinner-packet-hero.webp 960w" sizes="(max-width: 560px) 358px, (max-width: 820px) 75vw, 50vw" width="960" height="640" decoding="async" alt="Geometric paper recipe sheets arranged with ingredient markers and a kitchen timer"></picture><div><p class="step-label">Your workbench is clear</p><h3>Add a recipe to begin</h3><p>Use your own Markdown or JSON export, or load the three samples to see a complete packet in seconds.</p></div>`;
       list.append(empty);
       return;
     }
@@ -342,7 +343,7 @@ function startApp(): void {
     if (!recipe.instructions.length) { const item = document.createElement('li'); item.textContent = 'No instructions were found in this file.'; instructions.append(item); }
     methodSection.append(methodHeading, instructions); grid.append(ingredientsSection, methodSection);
     sheet.append(head, grid);
-    if (recipe.allergenNotes) { const allergens = document.createElement('aside'); allergens.className = 'allergen-print'; const strong = document.createElement('strong'); strong.textContent = 'Allergen note supplied with this packet: '; allergens.append(strong, document.createTextNode(recipe.allergenNotes)); sheet.append(allergens); }
+    if (recipe.allergenNotes) { const allergens = document.createElement('div'); allergens.className = 'allergen-print'; allergens.setAttribute('role', 'note'); const strong = document.createElement('strong'); strong.textContent = 'Allergen note supplied with this packet: '; allergens.append(strong, document.createTextNode(recipe.allergenNotes)); sheet.append(allergens); }
     if (recipe.sourceUrl && safeUrl(recipe.sourceUrl)) { const url = document.createElement('p'); url.className = 'print-url'; url.textContent = recipe.sourceUrl; sheet.append(url); }
     return sheet;
   }

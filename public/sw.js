@@ -15,10 +15,19 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) return;
-  event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
-      if (response.ok) caches.open(CACHE).then((cache) => cache.put(event.request, response.clone()));
+  event.respondWith((async () => {
+    const cached = await caches.match(event.request);
+    if (cached) return cached;
+    try {
+      const response = await fetch(event.request);
+      if (response.ok) {
+        const cache = await caches.open(CACHE);
+        await cache.put(event.request, response.clone());
+      }
       return response;
-    }).catch(() => caches.match('/')))
-  );
+    } catch {
+      if (event.request.mode === 'navigate') return (await caches.match('/')) || Response.error();
+      return Response.error();
+    }
+  })());
 });
