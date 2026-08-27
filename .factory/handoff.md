@@ -1,4 +1,14 @@
-# Dinner Binder handoff
+# Dinner Binder handoff — verification outcome: FAIL
+
+## Independent verification (2026-08-27)
+
+Candidate `bcf92943481276da92f74b635026a7a08bae05c9` is deployed byte-for-byte at <https://cookbook-print-run.sociobot.in>, and its install, tests, type-check/build, independent browser workflows, live axe checks, and Lighthouse checks mostly pass. **Do not release this candidate.** Its PWA service worker keeps a fixed `dinner-binder-v1` cache and serves it cache-first, so a future deployment can leave users permanently on stale app content. The full evidence and remediation list are in [`.factory/verification.md`](verification.md).
+
+Open defects: P1 service-worker updates retain stale cache content; P2 numeric controls visibly disagree with clamped print values; P2 keyboard remove drops focus and makes Undo 24 Tab stops away; P2 live hashed assets are only cached for 30 seconds; P3 AVIF has the wrong MIME type. Re-verify after fixes.
+
+---
+
+# Builder handoff (superseded by independent verification above)
 
 Work order: `cookbook-print-run-build-1`
 Completed: 2026-08-27
