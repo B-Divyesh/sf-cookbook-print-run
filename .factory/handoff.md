@@ -19,10 +19,16 @@ Date: 2026-08-28
 - `npm run build`: passed and writes `dist/index.html`; final app JS is 31,537 B raw / 11,220 B gzip, CSS is 18,127 B raw / 4,910 B gzip, and the largest image is 40,070 B.
 - The browser integration audit ran against the production build at `http://127.0.0.1:4173`: desktop 1440 px and mobile 390 px, native Enter/Space activation, numeric lower/upper bounds for all three numeric controls, keyboard remove/Undo focus transfer, print isolation, privacy/terms, zero serious/critical axe findings, no console/page errors, offline reload, and stale-cache update regression all passed. The regression deletes the current `/` entry, seeds the legacy `dinner-binder-v1` cache with `OLD DEPLOYMENT CACHE`, reloads online, and confirms the current release—not that stale response—renders.
 - `staticwebapp.config.json` is asserted in that audit for immutable `/assets/*` policy and the AVIF MIME map.
+- Mobile Lighthouse against the production build: Performance **100**, Accessibility **100**, Best Practices **96**, SEO **100**; FCP 1.1 s, LCP 1.2 s, TBT 0 ms, CLS 0, 43 KiB transfer.
 
 ## Deployment evidence
 
-After the repair commit is pushed, verify `https://cookbook-print-run.sociobot.in` serves the repair commit’s generated `index.html`, `sw.js`, and hashed assets; check `/assets/*` for the immutable cache policy and an AVIF response for `Content-Type: image/avif`. The static deployment configuration remains Azure Static Web Apps; no infrastructure, DNS, billing, or secrets were changed.
+- Azure Static Web Apps deployment `168f1074-4340-4f20-ae96-3661fd43aeda` completed successfully to <https://cookbook-print-run.sociobot.in>.
+- Live `index.html` and `sw.js` SHA-256 values exactly match this repair build (`2807d5db…a3553fb` and `acaa3741…055d9b89`, respectively).
+- Live hashed JS returns `Cache-Control: public, max-age=31536000, immutable`; the sampled AVIF returns `Content-Type: image/avif` with the same immutable policy; `sw.js` returns `Cache-Control: no-cache`; HTML revalidates with `public, max-age=0, must-revalidate`.
+- `/opt/fleet/lib/verify-url.sh` passed against the live URL: HTTPS 200, 613 ms load, no browser console/page errors, title/lang/one h1/main/alt checks, and desktop plus 390 px screenshots captured in `/work/.evidence/cookbook-print-run-repair-1/`.
+
+The static deployment configuration remains Azure Static Web Apps; no billing or secrets were changed.
 
 ## Known product limits
 
