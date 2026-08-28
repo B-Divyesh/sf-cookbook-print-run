@@ -1,14 +1,38 @@
-# Dinner Binder handoff — verification outcome: FAIL
+# Dinner Binder handoff — repair complete
 
-## Independent verification (2026-08-27)
+Work order: `cookbook-print-run-repair-1`
+Repaired base: `1a36e57b16a84720e44a6b01d7946dedc9c56c3a`
+Date: 2026-08-28
 
-Candidate `bcf92943481276da92f74b635026a7a08bae05c9` is deployed byte-for-byte at <https://cookbook-print-run.sociobot.in>, and its install, tests, type-check/build, independent browser workflows, live axe checks, and Lighthouse checks mostly pass. **Do not release this candidate.** Its PWA service worker keeps a fixed `dinner-binder-v1` cache and serves it cache-first, so a future deployment can leave users permanently on stale app content. The full evidence and remediation list are in [`.factory/verification.md`](verification.md).
+## Release-blocking repair
 
-Open defects: P1 service-worker updates retain stale cache content; P2 numeric controls visibly disagree with clamped print values; P2 keyboard remove drops focus and makes Undo 24 Tab stops away; P2 live hashed assets are only cached for 30 seconds; P3 AVIF has the wrong MIME type. Re-verify after fixes.
+- **P1 PWA update:** the production build now generates `dist/sw.js` with a build-derived `dinner-binder-release-<hash>` cache name and precaches the current shell plus static assets. On activation it deletes all prior release caches, including the old `dinner-binder-v1`, then claims clients. The app reloads once on `controllerchange`, so an activated worker takes the user to the new release. The fetch path reads only its own cache, never every Cache Storage entry.
+- **P2 numeric controls:** Serves (1–99), Prep min (0–1440), and Cook min (0–1440) immediately replace an out-of-range value with the printed value and announce the exact range/correction.
+- **P2 keyboard removal:** removing a recipe moves focus directly to the visible Undo button after the render; Enter restores the recipe.
+- **P2/P3 delivery policy:** Azure Static Web Apps configuration gives `/assets/*` `public, max-age=31536000, immutable`, keeps HTML and `sw.js` revalidating, and maps `.avif` to `image/avif`.
+
+## Exact verification
+
+- `npm ci`: completed with 0 reported vulnerabilities.
+- `npm test`: passed — 2 files, 10 tests.
+- `npm run lint`: passed (`tsc --noEmit`).
+- `npm run build`: passed and writes `dist/index.html`; final app JS is 31,537 B raw / 11,220 B gzip, CSS is 18,127 B raw / 4,910 B gzip, and the largest image is 40,070 B.
+- The browser integration audit ran against the production build at `http://127.0.0.1:4173`: desktop 1440 px and mobile 390 px, native Enter/Space activation, numeric lower/upper bounds for all three numeric controls, keyboard remove/Undo focus transfer, print isolation, privacy/terms, zero serious/critical axe findings, no console/page errors, offline reload, and stale-cache update regression all passed. The regression deletes the current `/` entry, seeds the legacy `dinner-binder-v1` cache with `OLD DEPLOYMENT CACHE`, reloads online, and confirms the current release—not that stale response—renders.
+- `staticwebapp.config.json` is asserted in that audit for immutable `/assets/*` policy and the AVIF MIME map.
+
+## Deployment evidence
+
+After the repair commit is pushed, verify `https://cookbook-print-run.sociobot.in` serves the repair commit’s generated `index.html`, `sw.js`, and hashed assets; check `/assets/*` for the immutable cache policy and an AVIF response for `Content-Type: image/avif`. The static deployment configuration remains Azure Static Web Apps; no infrastructure, DNS, billing, or secrets were changed.
+
+## Known product limits
+
+- Browser print engines control installed fonts, header/footer defaults, and final PDF page size. The app starts each recipe on a new sheet with 15 mm print margins; users may still need to disable browser headers/footers.
+- Ingredient scaling changes only leading numeric quantities; units and prose amounts are intentionally not guessed.
+- Allergy notes and cooking times are user-supplied and are not safety-verified.
 
 ---
 
-# Builder handoff (superseded by independent verification above)
+# Original builder handoff (historical)
 
 Work order: `cookbook-print-run-build-1`
 Completed: 2026-08-27

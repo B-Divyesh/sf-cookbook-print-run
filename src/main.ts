@@ -394,12 +394,20 @@ function startApp(): void {
     undo.append(button); undo.classList.add('show');
     undoTimer = window.setTimeout(() => { removed = null; undo.classList.remove('show'); undo.replaceChildren(); }, 7000);
     persistAndRender();
+    requestAnimationFrame(() => button.focus());
   }
 
   function numberField(labelText: string, value: number, min: number, max: number, update: (value: number) => void): HTMLLabelElement {
     const label = document.createElement('label'); label.textContent = labelText;
     const input = document.createElement('input'); input.type = 'number'; input.min = String(min); input.max = String(max); input.value = String(value); input.inputMode = 'numeric';
-    input.addEventListener('change', () => { update(Math.min(max, Math.max(min, Number(input.value) || min))); persistAndRenderPreview(); });
+    input.addEventListener('change', () => {
+      const entered = Number(input.value);
+      const clamped = Math.min(max, Math.max(min, Number.isFinite(entered) ? entered : min));
+      update(clamped);
+      input.value = String(clamped);
+      if (entered !== clamped) announce(`${labelText} must be between ${min} and ${max}. It was set to ${clamped}.`, true);
+      persistAndRenderPreview();
+    });
     label.append(input); return label;
   }
 
@@ -453,4 +461,14 @@ function slugify(value: string): string { return value.toLowerCase().trim().repl
 function escapeAttribute(value: string): string { return value.replace(/[&"<>]/g, (character) => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' })[character] || character); }
 function prefersReducedMotion(): boolean { return matchMedia('(prefers-reduced-motion: reduce)').matches; }
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) window.addEventListener('load', () => void navigator.serviceWorker.register('/sw.js'));
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    let reloadingForWorker = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloadingForWorker) return;
+      reloadingForWorker = true;
+      window.location.reload();
+    });
+    void navigator.serviceWorker.register('/sw.js');
+  });
+}

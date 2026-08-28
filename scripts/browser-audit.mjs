@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { chromium } from 'playwright';
+import { readFile } from 'node:fs/promises';
 
 const base = process.env.AUDIT_URL || 'http://127.0.0.1:5173';
 const browser = await chromium.launch({ headless: true });
@@ -26,7 +27,9 @@ if (await page.locator('h1').count() !== 1) throw new Error('Expected exactly on
 if (await page.locator('main').count() !== 1) throw new Error('Expected one main landmark');
 if (await page.locator('img:not([alt])').count()) throw new Error('Found image without alt text');
 
-await page.getByRole('button', { name: 'Try 3 sample recipes' }).click();
+const samplesButton = page.getByRole('button', { name: 'Try 3 sample recipes' });
+await samplesButton.focus();
+await samplesButton.press('Enter');
 await page.locator('.recipe-row').first().waitFor();
 if (await page.locator('.recipe-row').count() !== 3) throw new Error('Sample workflow did not load three recipes');
 if (await page.locator('.print-sheet').count() !== 4) throw new Error('Packet should contain cover plus three recipe sheets');
@@ -35,6 +38,40 @@ const firstServings = page.locator('.recipe-row').first().getByLabel('Serves');
 await firstServings.fill('8');
 await firstServings.blur();
 if (!await page.locator('.recipe-sheet').first().getByText('4 cans chickpeas, drained').isVisible()) throw new Error('Serving scaling was not reflected in the packet');
+
+async function expectNumberBoundary(label, min, max, previewText) {
+  const input = page.locator('.recipe-row').first().getByLabel(label);
+  await input.fill(String(min - 1));
+  await input.blur();
+  if (await input.inputValue() !== String(min)) throw new Error(`${label} did not visibly clamp its lower bound`);
+  if (!await page.locator('#messages').getByText(`${label} must be between ${min} and ${max}. It was set to ${min}.`).isVisible()) throw new Error(`${label} lower-bound validation was not announced`);
+  if (!await page.locator('.recipe-sheet').first().getByText(previewText(min)).isVisible()) throw new Error(`${label} lower bound did not match the print preview`);
+  await input.fill(String(max + 1));
+  await input.blur();
+  if (await input.inputValue() !== String(max)) throw new Error(`${label} did not visibly clamp its upper bound`);
+  if (!await page.locator('#messages').getByText(`${label} must be between ${min} and ${max}. It was set to ${max}.`).isVisible()) throw new Error(`${label} upper-bound validation was not announced`);
+  if (!await page.locator('.recipe-sheet').first().getByText(previewText(max)).isVisible()) throw new Error(`${label} upper bound did not match the print preview`);
+}
+
+await expectNumberBoundary('Serves', 1, 99, (value) => `Serves ${value}`);
+await expectNumberBoundary('Prep min', 0, 1440, (value) => value ? `${value} min prep` : 'Serves 99');
+await expectNumberBoundary('Cook min', 0, 1440, (value) => value ? `${value} min cook` : 'Serves 99');
+
+const thirdRecipeCheckbox = page.locator('.recipe-row').nth(2).getByRole('checkbox');
+await thirdRecipeCheckbox.focus();
+await thirdRecipeCheckbox.press('Space');
+if (await thirdRecipeCheckbox.isChecked()) throw new Error('Space did not toggle the native recipe selection off');
+await thirdRecipeCheckbox.press('Space');
+if (!await thirdRecipeCheckbox.isChecked()) throw new Error('Space did not toggle the native recipe selection on');
+
+const removeButton = page.locator('.recipe-row').first().getByRole('button', { name: /Remove / });
+await removeButton.focus();
+await removeButton.press('Enter');
+const undoButton = page.getByRole('button', { name: 'Undo' });
+await undoButton.waitFor();
+if (!await undoButton.evaluate((element) => document.activeElement === element)) throw new Error('Remove did not move keyboard focus directly to Undo');
+await undoButton.press('Enter');
+if (await page.locator('.recipe-row').count() !== 3) throw new Error('Keyboard Undo did not restore the removed recipe');
 
 const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 if (!noOverflow) throw new Error('The 390px layout has horizontal overflow');
@@ -53,13 +90,41 @@ const termsViolations = await assertA11y('/terms');
 await page.goto(base, { waitUntil: 'networkidle' });
 await page.evaluate(() => navigator.serviceWorker.ready);
 await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
+const serviceWorkerRegression = await page.evaluate(async () => {
+  const names = await caches.keys();
+  const current = names.find((name) => name.startsWith('dinner-binder-release-'));
+  if (!current) throw new Error(`No versioned Dinner Binder cache found: ${names.join(', ')}`);
+  const currentCache = await caches.open(current);
+  await currentCache.delete(new Request(`${location.origin}/`));
+  const stale = await caches.open('dinner-binder-v1');
+  await stale.put(new Request(`${location.origin}/`), new Response('<!doctype html><title>OLD DEPLOYMENT CACHE</title>'));
+  return { current, names: await caches.keys() };
+});
 await page.reload({ waitUntil: 'networkidle' });
+if (await page.getByText('OLD DEPLOYMENT CACHE').count()) throw new Error('A previous-release cache was served while online');
+if (!await page.getByRole('heading', { level: 1 }).isVisible()) throw new Error('The current release was not served after ignoring a stale cache');
 await context.setOffline(true);
 await page.reload({ waitUntil: 'domcontentloaded' });
 if (!await page.getByRole('heading', { level: 1 }).isVisible()) throw new Error(`App shell did not load offline (${page.url()} · ${(await page.locator('body').innerText()).slice(0, 120)})`);
 if (!await page.getByText('Offline now — edits are safe').isVisible()) throw new Error('Offline state was not announced');
 await context.setOffline(false);
 if (consoleErrors.length) throw new Error(`Console errors: ${consoleErrors.join(' | ')}`);
+
+const staticWebAppConfig = JSON.parse(await readFile(new URL('../public/staticwebapp.config.json', import.meta.url), 'utf8'));
+const assetRoute = staticWebAppConfig.routes?.find((route) => route.route === '/assets/*');
+if (assetRoute?.headers?.['Cache-Control'] !== 'public, max-age=31536000, immutable') throw new Error('Hashed assets are not configured for immutable caching');
+if (staticWebAppConfig.mimeTypes?.['.avif'] !== 'image/avif') throw new Error('AVIF MIME type is not configured for Azure Static Web Apps');
+
+const desktopContext = await browser.newContext({ viewport: { width: 1440, height: 960 } });
+const desktop = await desktopContext.newPage();
+await desktop.goto(base, { waitUntil: 'networkidle' });
+if (await desktop.locator('h1').count() !== 1 || await desktop.locator('main').count() !== 1) throw new Error('Desktop semantic landmarks are incomplete');
+const desktopAxe = await new AxeBuilder({ page: desktop }).analyze();
+const desktopBlocking = desktopAxe.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact));
+if (desktopBlocking.length) throw new Error(`Desktop accessibility violations: ${desktopBlocking.map((item) => item.id).join(', ')}`);
+const desktopOverflow = await desktop.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
+if (!desktopOverflow) throw new Error('The desktop layout has horizontal overflow');
+await desktopContext.close();
 
 await browser.close();
 console.log(JSON.stringify({
@@ -68,6 +133,9 @@ console.log(JSON.stringify({
   packetSheets: 4,
   mobileWidth: 390,
   offlineReload: true,
+  staleReleaseCacheIgnored: true,
+  serviceWorkerCache: serviceWorkerRegression.current,
+  desktopWidth: 1440,
   printMedia: true,
   seriousOrCriticalAxeViolations: 0,
   otherAxeFindings: homeAxe.violations.map((item) => `${item.impact}:${item.id}`),

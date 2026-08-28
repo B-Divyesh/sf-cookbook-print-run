@@ -46,6 +46,7 @@ Requires Node.js 20 or newer.
 npm install
 npm run dev
 npm test
+npm run lint
 npm run build
 ```
 
@@ -61,7 +62,7 @@ npm run audit:browser
 
 ## Deploy
 
-Deploy the contents of `dist/` as an Azure Static Web App. `staticwebapp.config.json` provides history fallback and security headers. The service worker caches the visited app shell and assets for repeat offline use. Infrastructure, DNS, product registration, and billing secrets are intentionally outside this repository.
+Deploy the contents of `dist/` as an Azure Static Web App. `staticwebapp.config.json` provides history fallback, security headers, immutable caching for content-hashed assets, and the AVIF MIME type. Each build generates a versioned service-worker cache, removes old release caches on activation, and reloads once when an update takes control; the current shell remains available offline. Infrastructure, DNS, product registration, and billing secrets are intentionally outside this repository.
 
 ## Privacy and safety
 
