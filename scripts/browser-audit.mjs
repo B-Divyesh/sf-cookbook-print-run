@@ -32,13 +32,21 @@ if (expectAzureDeploymentControl404) {
 if (await page.locator('h1').count() !== 1) throw new Error('Expected exactly one h1');
 if (await page.locator('main').count() !== 1) throw new Error('Expected one main landmark');
 if (await page.locator('img:not([alt])').count()) throw new Error('Found image without alt text');
+if (!await page.getByRole('link', { name: 'Try it with sample data' }).first().isVisible()) throw new Error('Primary demo action is not visible at 390x844');
+const firstScreenBottom = await page.getByRole('link', { name: 'Try it with sample data' }).first().evaluate((element) => element.getBoundingClientRect().bottom);
+if (firstScreenBottom > 844) throw new Error(`Primary demo action is below the first screen (${firstScreenBottom}px)`);
+if (await page.getByText('For households coordinating several recipes for a week, trip, or screen-free meal.').count() !== 1) throw new Error('First screen does not identify its household use');
+await page.evaluate(() => localStorage.setItem('dinner-binder:packet:v1', '{"sentinel":"real recipe bytes"}'));
 
-const samplesButton = page.getByRole('button', { name: 'Try 3 sample recipes' });
+const samplesButton = page.getByRole('link', { name: 'Try it with sample data' }).first();
 await samplesButton.focus();
 await samplesButton.press('Enter');
 await page.locator('.recipe-row').first().waitFor();
 if (await page.locator('.recipe-row').count() !== 3) throw new Error('Sample workflow did not load three recipes');
 if (await page.locator('.print-sheet').count() !== 4) throw new Error('Packet should contain cover plus three recipe sheets');
+if (!await page.getByText('Demo — sample data, nothing is saved').isVisible()) throw new Error('Demo banner is missing');
+if (await page.evaluate(() => localStorage.getItem('dinner-binder:packet:v1')) !== '{"sentinel":"real recipe bytes"}') throw new Error('Demo changed real recipe storage');
+if (!await page.evaluate(() => Object.keys(localStorage).includes('demo:dinner-binder:packet:v1'))) throw new Error('Demo did not use its own storage namespace');
 
 const firstServings = page.locator('.recipe-row').first().getByLabel('Serves');
 await firstServings.fill('8');
@@ -93,6 +101,16 @@ await page.emulateMedia({ media: 'screen' });
 
 const privacyViolations = await assertA11y('/privacy');
 const termsViolations = await assertA11y('/terms');
+await page.goto(base, { waitUntil: 'networkidle' });
+await page.getByRole('link', { name: 'Privacy' }).first().click();
+if (!await page.locator('h1').evaluate((element) => document.activeElement === element)) throw new Error('Client route did not move focus to h1');
+await page.goBack();
+if (await page.title() !== 'Dinner Binder — print a timed cooking packet') throw new Error('Back navigation did not restore home metadata');
+if (consoleErrors.length) throw new Error(`Console errors before expected 404 route: ${consoleErrors.join(' | ')}`);
+await page.goto(`${base}/definitely-missing`, { waitUntil: 'networkidle' });
+if (await page.title() !== 'Page not found — Dinner Binder') throw new Error('Unknown route did not render designed 404');
+if (!await page.getByRole('link', { name: 'Return to Dinner Binder' }).isVisible()) throw new Error('404 route has no way home');
+consoleErrors.length = 0;
 await page.goto(base, { waitUntil: 'networkidle' });
 await page.evaluate(() => navigator.serviceWorker.ready);
 await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
@@ -153,6 +171,10 @@ const desktopBlocking = desktopAxe.violations.filter((violation) => ['serious', 
 if (desktopBlocking.length) throw new Error(`Desktop accessibility violations: ${desktopBlocking.map((item) => item.id).join(', ')}`);
 const desktopOverflow = await desktop.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 if (!desktopOverflow) throw new Error('The desktop layout has horizontal overflow');
+for (const link of await desktop.locator('.site-header a, .site-footer a').all()) {
+  const box = await link.boundingBox();
+  if (box && (box.width < 44 || box.height < 44)) throw new Error(`Touch target is smaller than 44px: ${await link.textContent()} ${box.width}x${box.height}`);
+}
 await desktopContext.close();
 
 await browser.close();

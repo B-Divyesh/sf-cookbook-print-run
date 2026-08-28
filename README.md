@@ -1,23 +1,34 @@
 # Dinner Binder
 
-Dinner Binder turns a small set of recipe files into a dependable paper cooking run: scaled servings, ingredient checkboxes, a shared prep timeline, preserved credits, optional allergy notes, and clean page breaks. It is for households planning a week, a trip, or a screen-free meal—not for collecting recipes or scraping websites.
+Dinner Binder turns recipe files into a printable cooking packet. It is for households planning a week, trip, or screen-free meal.
 
 Live product: <https://cookbook-print-run.sociobot.in>
 
+One-click demo: <https://cookbook-print-run.sociobot.in/demo>
+
 ## What it does
 
-- Imports user-owned Markdown (`.md`, `.markdown`) and JSON recipe files, including common schema.org recipe fields.
-- Selects and orders recipes, scales numeric ingredient quantities, and lets the cook correct prep/cook times.
-- Works backward from one serving time to build a consolidated timeline.
-- Prints a cover/timeline plus one recipe per sheet with checkboxes and attribution.
-- Keeps the current packet in local browser storage and offers a JSON backup.
-- Works offline after the first visit; there are no accounts, trackers, recipe uploads, or CDN assets.
+- Imports owned Markdown and JSON recipe files up to 2 MB each. Common schema.org recipe fields work too.
+- Selects and orders recipes, scales numeric ingredient amounts, and updates prep or cook times.
+- Works backward from one serving time to build one timeline for all selected recipes.
+- Prints a cover and timeline, followed by one recipe per sheet.
+- Preserves supplied credits and allergy notes in the editor and print view.
+- Stores the current cooking packet in this browser and downloads a JSON backup.
+- Works offline after the first visit. It has no accounts, trackers, recipe uploads, or CDN assets.
 
-The free version supports three recipes per packet. Binder Plus is a $12 one-time license for unlimited recipes per packet, verified by the Sociobot billing API. Billing is configurable with `VITE_BILLING_BASE`; the default is the production API and no product ID or secret is stored in this repository.
+The free version prints three recipes per cooking packet. New Binder Plus purchases are paused until the approved checkout is enabled.
+
+## Try the isolated demo
+
+Open `/demo` or `/?demo=1` to load three sample recipes and a four-sheet print preview. Demo changes use only `demo:dinner-binder:packet:v1` in local storage.
+
+The demo never reads or changes `dinner-binder:packet:v1`, the real recipe key. “Reset demo” restores the three samples. “Start for real” deletes demo data.
+
+See [the demo record](.factory/demo.md) for the sample names and verification details.
 
 ## Recipe formats
 
-A Markdown recipe uses an H1 title plus ingredient and method sections. Optional YAML-style frontmatter can include `servings`, `prepMinutes`, `cookMinutes`, `author`, `source`, `sourceUrl`, `attribution`, and `allergenNotes`.
+A Markdown recipe uses an H1 title plus ingredient and method sections. Optional settings go between the opening `---` lines.
 
 ```md
 ---
@@ -36,45 +47,46 @@ sourceUrl: https://example.com/original
 2. Warm the sauce and combine.
 ```
 
-JSON may contain one recipe, an array, or `{ "recipes": [...] }`. Supported aliases include `name`, `recipeYield`, `prepTime`, `cookTime`, `recipeIngredient`, and `recipeInstructions`.
+JSON can contain one recipe, an array, or `{ "recipes": [...] }`. Supported aliases include common schema.org Recipe field names.
 
 ## Develop and verify
 
-Requires Node.js 20 or newer.
+Use Node.js 20 or a newer maintained release.
 
 ```sh
-npm install
+npm ci
 npm run dev
 npm test
 npm run lint
 npm run build
-```
-
-The exact production build command is `npm run build`; it produces `dist/` with `dist/index.html` at its root. Preview it with `npm run preview`.
-
-The optional browser audit needs a Playwright Chromium installation and a running local server:
-
-```sh
-npx playwright install chromium
-npm run dev
-npm run audit:browser
+npm run test:claims
 npm run test:browser
 ```
 
-`npm run test:browser` builds first, then runs the browser audit against an Azure-shaped static server. It deliberately returns 404 for `staticwebapp.config.json`, the deployment-control file Azure consumes, and verifies a first worker install, an offline reload, and a version-to-version worker update.
+`npm run build` creates `dist/index.html` and the service worker. `npm run test:claims` runs every public claim against the isolated demo.
+
+Each command in `.factory/claims.json` runs one claim by ID. The browser suite also checks accessibility, mobile layout, print output, routing, and offline updates.
 
 ## Deploy
 
-Deploy the contents of `dist/` as an Azure Static Web App. `staticwebapp.config.json` provides history fallback, security headers, immutable caching for content-hashed assets, and the AVIF MIME type. Azure consumes that configuration file rather than serving it, so each build explicitly excludes it from the service-worker shell. Each build generates a versioned service-worker cache, removes old release caches on activation, and reloads once when an update takes control; the current shell remains available offline. Infrastructure, DNS, product registration, and billing secrets are intentionally outside this repository.
+Deploy `dist/` as an Azure Static Web App. The supplied configuration adds history fallback, security headers, asset caching, and AVIF support.
+
+The service worker caches the application shell and removes old Dinner Binder caches during an update. Azure consumes `staticwebapp.config.json` during deployment.
 
 ## Privacy and safety
 
-Recipe data and license tokens remain in browser local storage. Only license purchase/verification contacts Sociobot. Dinner Binder does not infer allergens, verify dietary suitability, or provide food-safety advice. See `/privacy` and `/terms` in the built app.
+Recipe content stays in local browser storage. Only an existing license check may contact Sociobot, and demo mode never performs that check.
+
+Dinner Binder copies allergy notes you provide. It does not detect allergens or provide dietary, medical, or food-safety advice.
+
+Read the built-in [Privacy](https://cookbook-print-run.sociobot.in/privacy) and [Terms](https://cookbook-print-run.sociobot.in/terms) pages.
 
 ## Project records
 
 - `.factory/brief.json` — product scope
-- `.factory/design.md` — visual system and generated-art provenance
+- `.factory/design.md` — visual system and image source
+- `.factory/demo.md` — isolated demo behavior
+- `.factory/claims.json` — public claims and tests
 - `.factory/handoff.md` — verification record and known gaps
 
 Licensed under the [MIT License](LICENSE).

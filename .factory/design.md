@@ -47,6 +47,8 @@ The hero illustration is a generated editorial still life used only in the empty
 
 Final asset prompt is stored beside the source image in `assets/src/dinner-packet-hero.prompt.json`. Generated with the factory image model (`factory-image`, Azure AI Foundry) on 2026-08-27. The result is original generated imagery for this product; reviewed for text artifacts, unintended symbols, and visual seams. Production exports are WebP and AVIF, each kept under the 300 KB hero budget.
 
+The 1200 × 630 social preview is a palette-reduced crop of that original generated source. The SVG favicon is hand-authored for this product from its binder edge, punched holes, and herb-green checkmark. The 180 px touch icon is a square crop of the same original hero source. No third-party art or brand asset is used.
+
 ## Accessibility intent
 
 Information never depends on color: selections retain native checkboxes, errors include text, and sequence uses numbers. Focus is a 3 px saffron ring plus ink outline. Touch targets are at least 44 px. Print checkboxes remain high-contrast outlines. Allergens are notes supplied by the user—not inferred—and every relevant surface repeats that limitation.

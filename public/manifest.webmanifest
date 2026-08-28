@@ -1,10 +1,12 @@
 {
   "name": "Dinner Binder",
   "short_name": "Dinner Binder",
-  "description": "Make printable cooking packets from your own recipe files.",
+  "description": "Print a timed cooking packet from your own recipe files.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f7f2e8",
   "theme_color": "#a33a4b",
-  "icons": []
+  "icons": [
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
 }

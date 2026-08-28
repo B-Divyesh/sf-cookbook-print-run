@@ -46,14 +46,16 @@ const server = createServer(async (request, response) => {
     return;
   }
   let file = fileFor(pathname);
+  let statusCode = 200;
   try {
     if (!file || (await stat(file)).isDirectory()) throw new Error('history fallback');
   } catch {
     file = join(dist, 'index.html');
+    if (!['/', '/demo', '/privacy', '/terms'].includes(pathname)) statusCode = 404;
   }
   try {
     const body = file.endsWith(`${sep}sw.js`) ? await workerSource() : await readFile(file);
-    response.writeHead(200, {
+    response.writeHead(statusCode, {
       'Cache-Control': file.endsWith(`${sep}sw.js`) ? 'no-cache' : 'no-store',
       'Content-Type': mimeTypes[extname(file)] || 'application/octet-stream'
     });
