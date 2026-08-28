@@ -2,10 +2,10 @@ import { createHash } from 'node:crypto';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
+import { precachePaths } from './src/precache';
 
 const CACHE_PREFIX = 'dinner-binder-release-';
 const LEGACY_CACHE = 'dinner-binder-v1';
-
 async function filesIn(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = await Promise.all(entries.map(async (entry) => {
@@ -21,7 +21,8 @@ function serviceWorkerPlugin(): Plugin {
     apply: 'build',
     async closeBundle() {
       const output = join(process.cwd(), 'dist');
-      const files = (await filesIn(output)).filter((file) => !file.endsWith('/sw.js'));
+      const files = await filesIn(output);
+      const relativeFiles = files.map((file) => relative(output, file));
       const hash = createHash('sha256');
       hash.update(process.env.BUILD_ID || new Date().toISOString());
       for (const file of files.sort()) {
@@ -29,7 +30,7 @@ function serviceWorkerPlugin(): Plugin {
         hash.update(await readFile(file));
       }
       const cacheName = `${CACHE_PREFIX}${hash.digest('hex').slice(0, 16)}`;
-      const shell = ['/', ...files.map((file) => `/${relative(output, file).replaceAll('\\', '/')}`)];
+      const shell = precachePaths(relativeFiles);
       const source = `const CACHE = ${JSON.stringify(cacheName)};
 const SHELL = ${JSON.stringify(shell)};
 

@@ -10,7 +10,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "test:watch": "vitest",
-    "audit:browser": "node scripts/browser-audit.mjs"
+    "audit:browser": "node scripts/browser-audit.mjs",
+    "test:browser": "npm run build && node scripts/production-shaped-audit.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",

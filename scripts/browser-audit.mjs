@@ -3,6 +3,8 @@ import { chromium } from 'playwright';
 import { readFile } from 'node:fs/promises';
 
 const base = process.env.AUDIT_URL || 'http://127.0.0.1:5173';
+const expectAzureDeploymentControl404 = process.env.EXPECT_AZURE_DEPLOYMENT_CONTROL_404 === 'true';
+const testWorkerUpdate = process.env.TEST_SERVICE_WORKER_UPDATE === 'true';
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
 const page = await context.newPage();
@@ -23,6 +25,10 @@ async function assertA11y(path) {
 await page.goto(base, { waitUntil: 'networkidle' });
 await page.evaluate(() => localStorage.clear());
 await page.reload({ waitUntil: 'networkidle' });
+if (expectAzureDeploymentControl404) {
+  const deploymentControl = await page.request.get(`${base}/staticwebapp.config.json`);
+  if (deploymentControl.status() !== 404) throw new Error(`Expected Azure-shaped 404 for staticwebapp.config.json, got ${deploymentControl.status()}`);
+}
 if (await page.locator('h1').count() !== 1) throw new Error('Expected exactly one h1');
 if (await page.locator('main').count() !== 1) throw new Error('Expected one main landmark');
 if (await page.locator('img:not([alt])').count()) throw new Error('Found image without alt text');
@@ -95,6 +101,8 @@ const serviceWorkerRegression = await page.evaluate(async () => {
   const current = names.find((name) => name.startsWith('dinner-binder-release-'));
   if (!current) throw new Error(`No versioned Dinner Binder cache found: ${names.join(', ')}`);
   const currentCache = await caches.open(current);
+  const deploymentControl = await currentCache.match(new Request(`${location.origin}/staticwebapp.config.json`));
+  if (deploymentControl) throw new Error('Azure deployment control file was included in the service-worker shell');
   await currentCache.delete(new Request(`${location.origin}/`));
   const stale = await caches.open('dinner-binder-v1');
   await stale.put(new Request(`${location.origin}/`), new Response('<!doctype html><title>OLD DEPLOYMENT CACHE</title>'));
@@ -103,11 +111,32 @@ const serviceWorkerRegression = await page.evaluate(async () => {
 await page.reload({ waitUntil: 'networkidle' });
 if (await page.getByText('OLD DEPLOYMENT CACHE').count()) throw new Error('A previous-release cache was served while online');
 if (!await page.getByRole('heading', { level: 1 }).isVisible()) throw new Error('The current release was not served after ignoring a stale cache');
+let serviceWorkerUpdate = false;
 await context.setOffline(true);
 await page.reload({ waitUntil: 'domcontentloaded' });
 if (!await page.getByRole('heading', { level: 1 }).isVisible()) throw new Error(`App shell did not load offline (${page.url()} · ${(await page.locator('body').innerText()).slice(0, 120)})`);
 if (!await page.getByText('Offline now — edits are safe').isVisible()) throw new Error('Offline state was not announced');
 await context.setOffline(false);
+if (testWorkerUpdate) {
+  const updateResponse = await page.request.get(`${base}/__test__/activate-worker-update`);
+  if (!updateResponse.ok()) throw new Error(`Could not activate test worker update: ${updateResponse.status()}`);
+  await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) throw new Error('No registration available for update test');
+    await registration.update();
+  });
+  await page.waitForFunction(() => caches.keys().then((names) => names.some((name) => name.endsWith('-update'))));
+  const updateShell = await page.evaluate(async () => {
+    const name = (await caches.keys()).find((key) => key.endsWith('-update'));
+    if (!name) return false;
+    const cache = await caches.open(name);
+    return !(await cache.match(new Request(`${location.origin}/staticwebapp.config.json`)));
+  });
+  if (!updateShell) throw new Error('Updated worker cached an Azure deployment control file');
+  await page.waitForTimeout(300);
+  await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
+  serviceWorkerUpdate = true;
+}
 if (consoleErrors.length) throw new Error(`Console errors: ${consoleErrors.join(' | ')}`);
 
 const staticWebAppConfig = JSON.parse(await readFile(new URL('../public/staticwebapp.config.json', import.meta.url), 'utf8'));
@@ -134,6 +163,8 @@ console.log(JSON.stringify({
   mobileWidth: 390,
   offlineReload: true,
   staleReleaseCacheIgnored: true,
+  azureDeploymentControl404: expectAzureDeploymentControl404,
+  serviceWorkerUpdate,
   serviceWorkerCache: serviceWorkerRegression.current,
   desktopWidth: 1440,
   printMedia: true,

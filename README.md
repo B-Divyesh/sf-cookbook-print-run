@@ -58,11 +58,14 @@ The optional browser audit needs a Playwright Chromium installation and a runnin
 npx playwright install chromium
 npm run dev
 npm run audit:browser
+npm run test:browser
 ```
+
+`npm run test:browser` builds first, then runs the browser audit against an Azure-shaped static server. It deliberately returns 404 for `staticwebapp.config.json`, the deployment-control file Azure consumes, and verifies a first worker install, an offline reload, and a version-to-version worker update.
 
 ## Deploy
 
-Deploy the contents of `dist/` as an Azure Static Web App. `staticwebapp.config.json` provides history fallback, security headers, immutable caching for content-hashed assets, and the AVIF MIME type. Each build generates a versioned service-worker cache, removes old release caches on activation, and reloads once when an update takes control; the current shell remains available offline. Infrastructure, DNS, product registration, and billing secrets are intentionally outside this repository.
+Deploy the contents of `dist/` as an Azure Static Web App. `staticwebapp.config.json` provides history fallback, security headers, immutable caching for content-hashed assets, and the AVIF MIME type. Azure consumes that configuration file rather than serving it, so each build explicitly excludes it from the service-worker shell. Each build generates a versioned service-worker cache, removes old release caches on activation, and reloads once when an update takes control; the current shell remains available offline. Infrastructure, DNS, product registration, and billing secrets are intentionally outside this repository.
 
 ## Privacy and safety
 
