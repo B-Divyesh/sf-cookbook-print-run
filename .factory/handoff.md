@@ -4,7 +4,9 @@ Work order: `cookbook-print-run-polish-1`
 
 Reviewed base: `fd0626d05f5852fc24447f832d3d5aa07a5a3174`
 
-Repair commit: `41de89df029b490b2c2a51480e892ab6ebb10402`
+Runtime repair commit: `41de89df029b490b2c2a51480e892ab6ebb10402`
+
+Final claim-suite commit: `a72a5c5` (runtime build output unchanged)
 
 Date: 2026-08-28
 
@@ -26,7 +28,7 @@ Verdict: **PASS — no blocking review finding remains**
 
 ## Clean-clone claim evidence
 
-A separate clone at `/tmp/dinner-clean.2QkokI/repo` checked out repair commit `41de89d`. `npm ci` reported zero vulnerabilities.
+A separate clone at `/tmp/dinner-final.8jpgVa/repo` checked out claim-suite commit `a72a5c5`. `npm ci` reported zero vulnerabilities.
 
 Every command in `.factory/claims.json` ran separately and passed:
 
