@@ -154,6 +154,53 @@ const tests = [
     assert(await page.locator('.recipe-sheet').count() === 3, 'More than three recipe sheets were printable');
     await context.close();
   } },
+  { name: '@claim:existing-license-verification', run: async () => {
+    const context = await browser.newContext(); const page = await context.newPage();
+    let verificationUrl = '';
+    await page.route('https://api.sociobot.in/**', async route => {
+      verificationUrl = route.request().url();
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"valid":true,"reason":"ok"}' });
+    });
+    await page.goto(`${base}/?license=test-license-token`, { waitUntil: 'networkidle' });
+    await page.getByText('Binder Plus is active.').waitFor();
+    assert(verificationUrl === 'https://api.sociobot.in/api/v1/products/cookbook-print-run/verify?license=test-license-token', `Wrong verification endpoint: ${verificationUrl}`);
+    assert(await page.evaluate(() => localStorage.getItem('sb_license:cookbook-print-run')) === 'test-license-token', 'Returned license was not stored');
+    assert(!page.url().includes('license='), 'License token remained in the address bar');
+    await context.close();
+  } },
+  { name: '@claim:checkout-disabled', run: async () => {
+    const context = await browser.newContext(); const page = await context.newPage(); await page.goto(base);
+    assert(await page.locator('a[href*="/checkout"]').count() === 0, 'Disabled checkout link is still exposed');
+    assert(await page.getByText('Purchases are not available now.').isVisible(), 'Checkout status is not visible');
+    await context.close();
+  } },
+  { name: '@claim:service-worker-lifecycle', run: async () => {
+    const context = await browser.newContext(); const page = await context.newPage(); await page.goto(base);
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
+    const result = await page.evaluate(async () => {
+      const legacy = await caches.open('dinner-binder-v1');
+      await legacy.put('/', new Response('old'));
+      const registration = await navigator.serviceWorker.register('/sw.js?claim-update=1');
+      await new Promise((resolve, reject) => {
+        const worker = registration.installing || registration.waiting;
+        if (!worker || registration.active?.scriptURL.includes('claim-update=1')) return resolve(undefined);
+        const timeout = setTimeout(() => reject(new Error('Worker update timed out')), 5000);
+        worker.addEventListener('statechange', () => { if (worker.state === 'activated') { clearTimeout(timeout); resolve(undefined); } });
+      });
+      const keys = await caches.keys();
+      const current = keys.find(key => key.startsWith('dinner-binder-release-'));
+      const cache = current ? await caches.open(current) : null;
+      return { keys, current, deploymentControlCached: Boolean(await cache?.match('/staticwebapp.config.json')) };
+    });
+    assert(Boolean(result.current), 'Versioned service-worker cache is missing');
+    assert(!result.keys.includes('dinner-binder-v1'), 'Legacy cache was not removed during activation');
+    assert(!result.deploymentControlCached, 'Azure configuration was cached as runtime content');
+    const config = JSON.parse(await readFile('public/staticwebapp.config.json', 'utf8'));
+    assert(config.responseOverrides?.['404']?.statusCode === 404, 'Azure configuration does not preserve HTTP 404');
+    assert(['X-Content-Type-Options', 'Referrer-Policy', 'Content-Security-Policy'].every(header => config.globalHeaders?.[header]), 'Required security headers are missing');
+    await context.close();
+  } },
   { name: '@claim:documented-routes', run: async () => {
     const context = await browser.newContext(); const page = await context.newPage();
     for (const [path, title, heading] of [['/privacy', 'Privacy — Dinner Binder', 'Your recipes stay in your browser.'], ['/terms', 'Terms — Dinner Binder', 'Use recipes you have permission to use.']]) {
