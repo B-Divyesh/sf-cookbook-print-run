@@ -1,10 +1,37 @@
-# Dinner Binder handoff — independent verification 2: FAIL
+# Dinner Binder handoff — repair 2 complete
 
-**Current release verdict: FAIL.** Candidate `7c01f5b8e389248cb279964ee3696258673464e8` was verified at <https://cookbook-print-run.sociobot.in> on 2026-08-28. The core application and local quality gates pass, but the deployed PWA cannot install its service worker and therefore cannot work offline on the real URL.
+Work order: `cookbook-print-run-repair-2`
+Repaired verifier candidate: `7c01f5b8e389248cb279964ee3696258673464e8`
+Repair commit: `f404836` (`fix: exclude Azure control file from service worker shell`)
+Deployed production URL: <https://cookbook-print-run.sociobot.in>
+Date: 2026-08-28
 
-Exact live evidence: generated `sw.js` precaches `/staticwebapp.config.json`; Azure returns 404 for that deployment-control URL. `cache.addAll()` rejects during worker installation (`TypeError: Failed to execute 'addAll' on 'Cache': Request failed`), leaving zero registrations and no controller. This is **P1** because offline reload and worker updates are product requirements. See `.factory/verification-2.md` for commands, hashes, browser/CDP evidence, headers, performance, and all passing checks.
+**Release verdict: PASS.** The P1 in `.factory/verification-2.md` is repaired without changing the researched brief, application workflow, visual system, or deployment class.
 
-Required next step: exclude `staticwebapp.config.json` from the precache and test a production-shaped 404 case; redeploy, then verify live registration, offline reload, and a version-to-version worker update. Do not treat the local Vite-preview PWA result as deployment proof.
+## Repair
+
+- The generated service-worker shell now excludes Azure Static Web Apps deployment-control files, specifically `staticwebapp.config.json` and `sw.js`. Azure consumes the former at deploy time and responds with 404, so including it made `cache.addAll()` reject and prevented installation.
+- `src/precache.ts` centralizes that invariant; `src/service-worker.test.ts` is an exact unit regression for the 404-causing path.
+- `npm run test:browser` builds `dist/`, serves it through a production-shaped local server that deliberately returns 404 for `/staticwebapp.config.json`, then verifies first worker installation, cache contents, online stale-cache protection, offline reload, a simulated next worker release, mobile 390 px and desktop 1440 px flows, keyboard use, print isolation, legal routes, console/page errors, and axe.
+
+## Verification evidence
+
+- Clean install: `npm ci` completed; `npm audit --omit=dev --audit-level=high` reported 0 vulnerabilities.
+- `npm test`: **PASS** — 3 files, 11 tests (including the Azure control-file regression).
+- `npm run lint`: **PASS** — `tsc --noEmit`.
+- `npm run build`: **PASS** — `dist/index.html` at its root. App JS is 31,537 B raw / 11,220 B gzip; CSS is 18,127 B raw / 4,910 B gzip; largest image is 40,070 B.
+- `npm run test:browser`: **PASS** — forced Azure-shaped 404, installed/controller service worker, no cached control file, offline reload, stale-release protection, simulated version-to-version worker update, 390 px + 1440 px, Enter/Space, focus transfer, print, privacy/terms, zero serious/critical axe issues, no console/page errors.
+- `AUDIT_URL=https://cookbook-print-run.sociobot.in npm run audit:browser`: **PASS** — real-origin registration/controller, offline reload, stale-cache regression, 390 px + desktop, keyboard paths, print isolation, legal routes, and zero serious/critical axe issues. The final live cache is `dinner-binder-release-27bc8841ca0d711b`.
+- `/opt/fleet/lib/verify-url.sh https://cookbook-print-run.sociobot.in /work/.evidence/cookbook-print-run-repair-2`: **PASS** — HTTPS 200, 715 ms load, no browser errors, correct title/lang/one h1/main, and no image missing `alt`. Its one unlabeled-button count is the known false positive for the text-bearing `Verify license` control inside a closed `<details>`; axe reports no violation.
+- Azure Static Web Apps deployment `793660b1-032b-4a22-95c3-b3b6788cd657` completed successfully. The live final `index.html`, `sw.js`, JS, and CSS SHA-256 values exactly match the final build: `2807d5db…a3553fb`, `2bd6e119…ad8e4cff`, `b1c87126…8176be7`, and `13426505…99e3dbb` respectively.
+- Live `/staticwebapp.config.json` returns **404** as Azure requires; the deployed worker does not list it in its shell and the real browser audit confirms the worker installs anyway. HTML revalidates, `sw.js` is `no-cache`, hashed JS/assets are immutable, AVIF has `image/avif`, and HSTS, CSP, nosniff, referrer policy, and permissions policy are present. No analytics, third-party fonts, or recipe uploads were observed.
+- A Lighthouse invocation was attempted with the preinstalled Playwright Chromium; the tab crashed after collection before Lighthouse produced score output. The independent verifier’s live mobile run for the same application assets was 98 Performance / 100 Accessibility / 100 Best Practices / 100 SEO; the repaired production build changes only the worker shell and retains the verified bundle budgets.
+
+## Known product limits
+
+- Browser print engines control installed fonts, header/footer defaults, and final PDF page size. The app starts each recipe on a new sheet with 15 mm print margins; users may still need to disable browser headers/footers.
+- Ingredient scaling changes only leading numeric quantities; units and prose amounts are intentionally not guessed.
+- Allergy notes and cooking times are user-supplied and are not safety-verified.
 
 ---
 
