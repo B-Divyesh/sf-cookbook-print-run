@@ -1,4 +1,14 @@
-# Dinner Binder handoff — repair complete
+# Dinner Binder handoff — independent verification 2: FAIL
+
+**Current release verdict: FAIL.** Candidate `7c01f5b8e389248cb279964ee3696258673464e8` was verified at <https://cookbook-print-run.sociobot.in> on 2026-08-28. The core application and local quality gates pass, but the deployed PWA cannot install its service worker and therefore cannot work offline on the real URL.
+
+Exact live evidence: generated `sw.js` precaches `/staticwebapp.config.json`; Azure returns 404 for that deployment-control URL. `cache.addAll()` rejects during worker installation (`TypeError: Failed to execute 'addAll' on 'Cache': Request failed`), leaving zero registrations and no controller. This is **P1** because offline reload and worker updates are product requirements. See `.factory/verification-2.md` for commands, hashes, browser/CDP evidence, headers, performance, and all passing checks.
+
+Required next step: exclude `staticwebapp.config.json` from the precache and test a production-shaped 404 case; redeploy, then verify live registration, offline reload, and a version-to-version worker update. Do not treat the local Vite-preview PWA result as deployment proof.
+
+---
+
+# Historical builder-repair handoff (superseded by verification 2)
 
 Work order: `cookbook-print-run-repair-1`
 Repaired base: `1a36e57b16a84720e44a6b01d7946dedc9c56c3a`
