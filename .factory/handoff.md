@@ -47,7 +47,7 @@ The final artifact contains 35.52 KB raw JavaScript (12.23 KB gzip), 21.00 KB CS
 - `AUDIT_URL=https://cookbook-print-run.sociobot.in npm run audit:browser` passed: live demo, reset, offline reload, keyboard paths, print view, responsive layout, and zero serious/critical axe findings.
 - Fresh 390 × 844 and 1440 × 900 contexts both stated the job, household audience, and **Try it with sample data** before scrolling. The action opened the isolated three-recipe, four-sheet demo. After a packet-name and serving-time edit, reset visibly returned both to `Sample supper` and `18:30`, with matching stored state and preview. No console errors occurred.
 - A fresh unknown URL returned HTTP 404 with title `Page not found — Dinner Binder`, direct `Page not found` heading, and a visible home link.
-- Mobile Lighthouse retry completed without a runtime error: Performance 100, Accessibility 100, Best Practices 100, SEO 100; LCP 1.285 s, CLS 0, TBT 0 ms. Evidence is in `/work/.evidence/cookbook-print-run-repair-3-live/`.
+- An initial Lighthouse invocation could not discover Chromium, and its first configured run ended with a browser-tab crash; that partial JSON is retained only as failed evidence. The retry completed without a runtime error: Performance 100, Accessibility 100, Best Practices 100, SEO 100; LCP 1.285 s, CLS 0, TBT 0 ms. Evidence is in `/work/.evidence/cookbook-print-run-repair-3-live/`.
 
 ## Earlier-finding disposition
 
