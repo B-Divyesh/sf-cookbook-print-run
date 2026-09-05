@@ -1,12 +1,12 @@
-# Dinner Binder handoff — repair 3
+# Dinner Binder handoff — verification 5
 
-Work order: `cookbook-print-run-repair-3`
+Work order: `cookbook-print-run-verify-5`
 Date: 2026-09-05
 Live URL: <https://cookbook-print-run.sociobot.in>
 
 ## Status
 
-**Complete.** The two strict-review findings and the untested reset claim are resolved and deployed.
+**Verification FAIL.** Runtime behavior is deployed and healthy, but one declared claim command is not reliable when run individually from the documented clean setup. This is a claims-contract finding; no product code was changed during verification.
 
 ## Commits
 
@@ -14,7 +14,7 @@ Live URL: <https://cookbook-print-run.sociobot.in>
 - Final implementation and validation-test repair: `1b21363d54b2d25b79414fbfd53f861d43726038`
 - Documentation/report commits follow these implementation commits; see the final Git handoff for their SHA.
 
-## What changed
+## Earlier runtime changes
 
 - Resetting the isolated demo now restores the packet-name and serving-time controls immediately, as well as storage and the print preview.
 - Added the public `demo-reset` claim. Its browser test changes both settings, resets, and proves the controls, persisted state, cover preview, recipe count, sheet count, and real-data sentinel have the expected outcome.
@@ -23,7 +23,15 @@ Live URL: <https://cookbook-print-run.sociobot.in>
 - Updated demo and README records to state exactly which demo settings reset restores.
 - Copied the verb-first catalog description to `/work/.evidence/catalog-description.txt`.
 
-## Verification
+## Verification 5
+
+Implementation candidate: `1b21363d54b2d25b79414fbfd53f861d43726038`. Documentation candidate: `8cb719e79a9e546f0e4a85512e8e0cec9553f280`; its only diff from the implementation candidate is this handoff file, so the runtime comparison remains valid.
+
+A new clean clone installed with `npm ci` and passed unit tests, lint, build, Node 20, production-shaped browser checks, `npm audit --omit=dev --audit-level=high`, live browser audit, `verify-url.sh`, live link/response checks, and Lighthouse (100/100/100/100; LCP 1.171 s, CLS 0, TBT 0).
+
+Nineteen of the twenty exact commands declared in `.factory/claims.json` passed separately. The exception is `npm run test:claims -- --grep @claim:documented-routes`, which failed twice in a new process with `Execution context was destroyed` / `net::ERR_ABORTED` while navigating Privacy → Terms. `npm run test:claims` passes when it runs all claims together, and the live routes work, but the required individual command is timing-dependent. See `.factory/verification-5.md` for complete evidence and disposition.
+
+## Verification before verification 5
 
 ### Clean checkout
 
@@ -59,4 +67,5 @@ The final artifact contains 35.52 KB raw JavaScript (12.23 KB gzip), 21.00 KB CS
 
 ## Known gap and next step
 
-The free core is complete and local-first. New Binder Plus checkout is still deliberately unavailable because the approved billing offer has not been registered. Existing license restoration and verification remain available; the separate billing-registration operator must enable an approved one-time offer before a checkout link or price is shown.
+1. Stabilize the standalone `documented-routes` claim command, then rerun it repeatedly from fresh clean clones. The next verifier may declare PASS only after all 20 exact commands pass individually.
+2. The free core remains local-first. New Binder Plus checkout is deliberately unavailable because the approved billing offer has not been registered. Existing license restoration and verification remain available; the separate billing-registration operator must enable an approved one-time offer before a checkout link or price is shown.
