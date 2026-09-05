@@ -1,84 +1,39 @@
-# Dinner Binder handoff — verification 4
+# Dinner Binder handoff — strict review 2
 
-Work order: `cookbook-print-run-verify-4`
-
-Implementation reviewed: `41de89df029b490b2c2a51480e892ab6ebb10402`
-
-Runtime repair commit: `41de89df029b490b2c2a51480e892ab6ebb10402`
-
-Validation-suite commit: `a72a5c5` (runtime build output unchanged)
-
-Documentation commit: `2cf6057`
+Work order: `cookbook-print-run-review-2`
 
 Date: 2026-09-05
+Live URL: <https://cookbook-print-run.sociobot.in>
 
-Verdict: **PASS — zero findings and zero untested public claims**
+Verdict: **FAIL — 2 findings and 1 untested public claim**
 
-## What changed
+## Reviewed candidates
 
-- Replaced the first screen with an eight-word job headline, named household use cases, a visible sample action, its result, and three tested facts.
-- Added isolated `/demo` and `/?demo=1` entry points. They seed three recipes under `demo:dinner-binder:packet:v1` only.
-- Added the persistent demo banner, “Reset demo,” and “Start for real.” Leaving demo deletes the demo key.
-- Added `.factory/claims.json` and one tagged browser or runtime test for each of 19 public claims.
-- Removed the dead checkout action. The page now states that purchases are unavailable while existing-license restore remains available.
-- Added route-specific titles, descriptions, canonicals, Open Graph/Twitter metadata, a 1200 × 630 social image, favicon, and touch icon.
-- Added real `/demo`, `/privacy`, and `/terms` rewrites plus a styled unknown-route response with HTTP 404.
-- Added client navigation focus transfer, live announcement, back/forward handling, consistent navigation/footer, factory credit, build ID, and 44 px targets.
-- Reworked phone spacing and type so the first action and all three facts fit at 390 × 844 without horizontal overflow.
-- Replaced competing output metaphors with “cooking packet.” Added the required copy audit, demo record, and catalog description.
-- Preserved the measured mise en place palette, ruled sheets, binder holes, paper geometry, editorial type, and generated collage art.
+- Implementation: `41de89df029b490b2c2a51480e892ab6ebb10402`
+- Validation suite: `a72a5c5b9c6ac9958df4434f2c353915d7c2cdd3`
+- Documentation: `2cf60579dd255ed1980c7ba4b6cbbdcb0b8acd53`
+- Review base: `77ff9fbc7a98487ced8c2fcb40f4e8c2c4a350fd`
 
-## Clean-clone claim evidence
+The clean build matches the live HTML, JavaScript, and CSS byte for byte. The service worker matches after normalizing its release cache identifier. Product code was not changed during this review.
 
-A separate clone at `/tmp/dinner-final.8jpgVa/repo` checked out claim-suite commit `a72a5c5`. `npm ci` reported zero vulnerabilities.
+## What was checked
 
-Every command in `.factory/claims.json` ran separately and passed:
+- Fresh 390 × 844 phone and 1440 × 900 desktop first screens
+- One-click sample, persistent demo label, realistic three-recipe/four-sheet output, reset, exit, and real-data sentinel isolation
+- Normal, malformed JSON, numeric boundary, keyboard, focus, Undo, print, reduced-motion, 200% reflow, and offline paths
+- Home, demo, Privacy, Terms, internal links, metadata, response headers, and deliberate HTTP 404
+- Axe and the factory URL verifier on all 200 routes
+- Mobile Lighthouse: 100/100/100/100, LCP 1.3 s, CLS 0, TBT 0 ms
+- All 19 exact claim commands from a remote clean clone
+- Unit tests, TypeScript, build, production-shaped browser suite, Node 20, and dependency audit
 
-`offline-reload`, `demo-isolation-local`, `no-accounts-trackers-cdn`, `input-formats-size`, `sample-packet`, `edit-preview`, `shared-timeline`, `one-recipe-per-sheet`, `attribution-allergy`, `json-backup`, `free-limit`, `existing-license-verification`, `checkout-disabled`, `service-worker-lifecycle`, `node20-runtime`, `documented-routes`, `build-output`, `project-records-license`, and `safety-boundary`.
+## Findings
 
-The isolation test seeded the real key before demo edits, import, reset, and exit. Its bytes remained unchanged, and no cross-origin request or cookie appeared.
+1. **Major:** After changing packet name and serving time, **Reset demo** restores storage and preview output but leaves both visible inputs stale. The complete reset promise is not asserted by a declared claim test.
+2. **Minor:** The 404 headings use paper/binder metaphors instead of direct plain words.
 
-## Full verification
+See `.factory/review-2.md` for reproduction steps, evidence, full test results, and earlier-finding disposition.
 
-- `npm test` — 11 tests passed in 3 files.
-- `npm run lint` — TypeScript passed with no errors.
-- `npm run test:node20` — 11 unit tests and the production build passed on Node v20.20.2.
-- `npm run build` — produced `dist/index.html` and `dist/sw.js`.
-- Production assets — JS 35.45 KB raw / 12.21 KB gzip; CSS 21.00 KB raw / 5.46 KB gzip; mobile hero AVIF 9.03 KB.
-- `npm run test:browser` — passed at 390 px and 1440 px, keyboard undo, print media, offline reload, stale-cache rejection, and service-worker update.
-- Playwright axe — zero serious, critical, or other findings on home, demo, privacy, terms, mobile, and desktop checks.
-- `/opt/fleet/lib/verify-url.sh` — live home, demo, privacy, and terms returned 200 with title, `lang`, one h1, main, image alts, zero unlabeled buttons, and zero console errors.
-- Live `/definitely-missing` — HTTP 404 with the designed Dinner Binder return link.
-- Live browser audit — passed; offline reload worked from cache `dinner-binder-release-e8affed9e61e671e`.
-- Lighthouse 12.8.2 mobile against production — performance 100, accessibility 100, best practices 100, SEO 100; LCP 1.2 s, CLS 0, TBT 40 ms, speed index 1.1 s.
-- `git diff --check` — passed.
+## Next steps
 
-## Run and verify
-
-```sh
-npm ci
-npm test
-npm run lint
-npm run test:claims
-npm run test:browser
-npm run build
-```
-
-To run one public claim, copy its exact command from `.factory/claims.json`.
-
-## Deployment
-
-- Static deployment command: `/opt/fleet/lib/deploy-static.sh cookbook-print-run dist`
-- Azure deployment ID: `88fb1846-a587-47f4-8bb5-3f5076004b88`
-- Azure app: `sf-cookbook-print-run` in `eastus2`
-- Production: <https://cookbook-print-run.sociobot.in>
-- Demo: <https://cookbook-print-run.sociobot.in/demo>
-- Managed custom domain status: `Ready`; production returned HTTP 200 after upload.
-
-## Known gaps and next step
-
-There are no known blocking product gaps. New Binder Plus sales remain intentionally unavailable because the approved checkout is not enabled. Reintroduce a buy link only after that route passes a non-charging checkout and return-path test.
-
-## Verification 4 evidence
-
-Independent verification on 2026-09-05 used a clean `2cf6057` clone. Every one of the 19 declared claim commands passed individually, as did unit tests, lint, build, Node 20, and the production-shaped browser suite. Live phone and desktop first reads, sample/reset isolation, keyboard, invalid/recovery paths, legal and 404 routes, privacy requests, service-worker offline reload, accessibility scans, response headers, link crawl, and Lighthouse (100/100/100/100) all passed. The live HTML, JS, and CSS exactly match the clean build; the worker is source-identical apart from its expected release cache id. See `.factory/verification-4.md` for detailed evidence and earlier-finding disposition.
+Synchronize the packet-name and serving-time controls during reset, add an immediate reset assertion to the claim suite, replace the 404 headings with direct copy, deploy, and rerun the strict review.
