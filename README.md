@@ -22,7 +22,7 @@ The free version prints three recipes per cooking packet. New Binder Plus purcha
 
 Open `/demo` or `/?demo=1` to load three sample recipes and a four-sheet print preview. Demo changes use only `demo:dinner-binder:packet:v1` in local storage.
 
-The demo never reads or changes `dinner-binder:packet:v1`, the real recipe key. “Reset demo” restores the three samples. “Start for real” deletes demo data.
+The demo never reads or changes `dinner-binder:packet:v1`, the real recipe key. “Reset demo” restores the three samples, packet name, and serving time. “Start for real” deletes demo data.
 
 See [the demo record](.factory/demo.md) for the sample names and verification details.
 

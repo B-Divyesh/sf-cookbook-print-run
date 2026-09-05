@@ -85,8 +85,8 @@ function renderNotFound(): void {
   app.innerHTML = `${commonHeader()}
     <main id="main" class="not-found-page">
       <div class="not-found-number" aria-hidden="true">404</div>
-      <p class="eyebrow">That sheet is missing</p>
-      <h1 tabindex="-1">This page is not in the binder.</h1>
+      <p class="eyebrow">Error 404</p>
+      <h1 tabindex="-1">Page not found</h1>
       <p>Check the address, or return to the recipe list.</p>
       <div class="not-found-actions"><a class="button primary" href="/">Return to Dinner Binder</a><a href="/demo">Open sample cooking packet</a></div>
     </main>
@@ -222,8 +222,9 @@ function startApp(isDemo: boolean): void {
     if (!isDemo) return;
     state = sampleState();
     saveState(state, storageKey);
-    announce('The three sample recipes were reset.');
     renderAll();
+    syncPacketSettings();
+    announce('The three sample recipes and packet settings were reset.');
   };
   document.getElementById('reset-demo')?.addEventListener('click', resetDemo);
   document.getElementById('reset-demo-inline')?.addEventListener('click', resetDemo);
@@ -451,6 +452,10 @@ function startApp(isDemo: boolean): void {
 
   function persistAndRender(): void { saveState(state, storageKey); renderAll(); }
   function persistAndRenderPreview(): void { saveState(state, storageKey); renderPreview(); }
+  function syncPacketSettings(): void {
+    getElement<HTMLInputElement>('packet-title').value = state.packetTitle;
+    getElement<HTMLInputElement>('serve-at').value = state.serveAt;
+  }
   function selectedRecipes(): Recipe[] { return state.recipes.filter((recipe) => recipe.selected); }
 
   function enforceFreeSelections(): void {

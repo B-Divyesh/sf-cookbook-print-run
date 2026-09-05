@@ -73,6 +73,21 @@ const tests = [
     assert(await page.evaluate(() => localStorage.getItem('dinner-binder:packet:v1')) === '{"sentinel":"My real stew"}', 'Leaving demo changed real data');
     await context.close();
   } },
+  { name: '@claim:demo-reset', run: async () => {
+    const { context, page } = await demoPage({ seedReal: true });
+    await page.getByLabel('Packet name').fill('Changed demo title');
+    await page.getByLabel('Serve everything at').fill('20:00');
+    await page.getByRole('button', { name: 'Reset demo', exact: true }).click();
+    assert(await page.getByLabel('Packet name').inputValue() === 'Sample supper', 'Reset did not restore the visible packet name');
+    assert(await page.getByLabel('Serve everything at').inputValue() === '18:30', 'Reset did not restore the visible serving time');
+    assert(await page.locator('.recipe-row').count() === 3 && await page.locator('.print-sheet').count() === 4, 'Reset did not restore the complete sample packet');
+    assert(await page.locator('.cover-sheet h2').textContent() === 'Sample supper', 'Reset packet name did not match the print preview');
+    assert(await page.locator('.cover-sheet').getByText('3 recipes · Serve at 6:30 pm').isVisible(), 'Reset serving time did not match the print preview');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('demo:dinner-binder:packet:v1') || '{}'));
+    assert(saved.packetTitle === 'Sample supper' && saved.serveAt === '18:30', 'Reset did not save the original packet settings');
+    assert(await page.evaluate(() => localStorage.getItem('dinner-binder:packet:v1')) === '{"sentinel":"My real stew"}', 'Reset demo changed real recipe data');
+    await context.close();
+  } },
   { name: '@claim:no-accounts-trackers-cdn', run: async () => {
     const context = await browser.newContext(); const page = await context.newPage();
     const external = [];
