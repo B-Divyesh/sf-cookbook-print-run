@@ -1,16 +1,18 @@
-# Dinner Binder handoff — perfection loop round 1
+# Dinner Binder handoff — verification 4
 
-Work order: `cookbook-print-run-polish-1`
+Work order: `cookbook-print-run-verify-4`
 
-Reviewed base: `fd0626d05f5852fc24447f832d3d5aa07a5a3174`
+Implementation reviewed: `41de89df029b490b2c2a51480e892ab6ebb10402`
 
 Runtime repair commit: `41de89df029b490b2c2a51480e892ab6ebb10402`
 
-Final claim-suite commit: `a72a5c5` (runtime build output unchanged)
+Validation-suite commit: `a72a5c5` (runtime build output unchanged)
 
-Date: 2026-08-28
+Documentation commit: `2cf6057`
 
-Verdict: **PASS — no blocking review finding remains**
+Date: 2026-09-05
+
+Verdict: **PASS — zero findings and zero untested public claims**
 
 ## What changed
 
@@ -76,3 +78,7 @@ To run one public claim, copy its exact command from `.factory/claims.json`.
 ## Known gaps and next step
 
 There are no known blocking product gaps. New Binder Plus sales remain intentionally unavailable because the approved checkout is not enabled. Reintroduce a buy link only after that route passes a non-charging checkout and return-path test.
+
+## Verification 4 evidence
+
+Independent verification on 2026-09-05 used a clean `2cf6057` clone. Every one of the 19 declared claim commands passed individually, as did unit tests, lint, build, Node 20, and the production-shaped browser suite. Live phone and desktop first reads, sample/reset isolation, keyboard, invalid/recovery paths, legal and 404 routes, privacy requests, service-worker offline reload, accessibility scans, response headers, link crawl, and Lighthouse (100/100/100/100) all passed. The live HTML, JS, and CSS exactly match the clean build; the worker is source-identical apart from its expected release cache id. See `.factory/verification-4.md` for detailed evidence and earlier-finding disposition.
