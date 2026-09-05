@@ -164,6 +164,7 @@ const tests = [
   { name: '@claim:free-limit', run: async () => {
     const { context, page } = await demoPage();
     await page.locator('#recipe-files').setInputFiles({ name: 'fourth.md', mimeType: 'text/markdown', buffer: Buffer.from('# Fourth recipe\n## Ingredients\n- 1 cup rice\n## Method\n1. Cook.') });
+    await page.locator('.recipe-row').nth(3).waitFor();
     assert(await page.locator('.recipe-row').count() === 4, 'Fourth recipe was not imported');
     assert(await page.locator('.recipe-row input[type="checkbox"]:checked').count() === 3, 'Free selection limit was not enforced');
     assert(await page.locator('.recipe-sheet').count() === 3, 'More than three recipe sheets were printable');
